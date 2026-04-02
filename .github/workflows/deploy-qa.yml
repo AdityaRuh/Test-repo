@@ -1,0 +1,82 @@
+name: Deploy to QA
+
+on:
+  push:
+    branches:
+      - qa
+  pull_request:
+    branches:
+      - qa
+    types: [closed]
+
+jobs:
+  deploy-qa:
+    name: Deploy — QA Environment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event.pull_request.merged == true)
+    environment:
+      name: qa
+      url: https://adityaruh.github.io/Test-repo/qa
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate project structure
+        run: |
+          echo "✅ Validating project files..."
+          test -f index.html     && echo "  ✓ index.html"
+          test -f src/styles.css && echo "  ✓ src/styles.css"
+          test -f src/app.js     && echo "  ✓ src/app.js"
+          echo "✅ Validation passed"
+
+      - name: Run smoke tests
+        run: |
+          echo "🔍 Running QA smoke checks..."
+
+          # Check for console.log statements (should be cleaned before QA)
+          if grep -r "console\.log" src/; then
+            echo "⚠️  Warning: console.log statements found in src/"
+          else
+            echo "  ✓ No stray console.log statements"
+          fi
+
+          # Check HTML structure
+          grep -q "<title>" index.html       && echo "  ✓ <title> tag present"
+          grep -q "viewport" index.html      && echo "  ✓ viewport meta tag present"
+          grep -q "styles.css" index.html    && echo "  ✓ stylesheet linked"
+          grep -q "app.js" index.html        && echo "  ✓ app script linked"
+
+          echo "✅ Smoke checks complete"
+
+      - name: Check diff from dev
+        run: |
+          echo "📋 Files changed vs origin/dev:"
+          git fetch origin dev --depth=1 2>/dev/null || echo "(first deploy — no diff)"
+          git diff --name-only origin/dev HEAD 2>/dev/null || echo "N/A"
+
+      - name: Deploy to GitHub Pages (qa)
+        if: github.ref == 'refs/heads/qa'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          destination_dir: qa
+          commit_message: "deploy: [qa] ${{ github.sha }}"
+
+      - name: Post deployment summary
+        run: |
+          echo "🚀 Deployment Summary"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Environment : QA"
+          echo "Branch      : ${{ github.ref_name }}"
+          echo "Commit      : ${{ github.sha }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Source      : dev → qa"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔗 https://adityaruh.github.io/Test-repo/qa"

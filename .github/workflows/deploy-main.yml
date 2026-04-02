@@ -1,0 +1,102 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+
+jobs:
+  deploy-main:
+    name: Deploy — Production
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event.pull_request.merged == true)
+    environment:
+      name: main
+      url: https://adityaruh.github.io/Test-repo
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate project structure
+        run: |
+          echo "✅ Validating project files..."
+          test -f index.html     && echo "  ✓ index.html"
+          test -f src/styles.css && echo "  ✓ src/styles.css"
+          test -f src/app.js     && echo "  ✓ src/app.js"
+          echo "✅ Validation passed"
+
+      - name: Run production readiness checks
+        run: |
+          echo "🔍 Running production readiness checks..."
+
+          FAIL=0
+
+          # No console.log in production
+          if grep -r "console\.log" src/; then
+            echo "  ✗ FAIL: console.log statements found — remove before production"
+            FAIL=1
+          else
+            echo "  ✓ No console.log statements"
+          fi
+
+          # No TODO/FIXME comments
+          if grep -rni "TODO\|FIXME\|HACK\|XXX" src/ index.html; then
+            echo "  ⚠️  Warning: TODO/FIXME comments found"
+          else
+            echo "  ✓ No TODO/FIXME comments"
+          fi
+
+          # Required HTML meta tags
+          grep -q "<title>"     index.html && echo "  ✓ <title> present"     || { echo "  ✗ FAIL: <title> missing"; FAIL=1; }
+          grep -q "description" index.html && echo "  ✓ meta description present" || echo "  ⚠️  Warning: meta description missing"
+          grep -q "viewport"    index.html && echo "  ✓ viewport meta present" || { echo "  ✗ FAIL: viewport meta missing"; FAIL=1; }
+
+          if [ "$FAIL" -eq 1 ]; then
+            echo ""
+            echo "❌ Production checks FAILED — fix the issues above before deploying to main"
+            exit 1
+          fi
+
+          echo "✅ All production checks passed"
+
+      - name: Generate release notes
+        run: |
+          echo "📝 Release Notes"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Commit : ${{ github.sha }}"
+          echo "Author : ${{ github.actor }}"
+          echo "Date   : $(date -u '+%Y-%m-%d %H:%M UTC')"
+          echo ""
+          echo "Recent commits:"
+          git log --oneline -5 2>/dev/null || echo "N/A"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+      - name: Deploy to GitHub Pages (main / production)
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          commit_message: "deploy: [production] ${{ github.sha }}"
+
+      - name: Post deployment summary
+        run: |
+          echo "🚀 Deployment Summary"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Environment : PRODUCTION (main)"
+          echo "Branch      : ${{ github.ref_name }}"
+          echo "Commit      : ${{ github.sha }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Source      : qa → main"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🔗 https://adityaruh.github.io/Test-repo"
