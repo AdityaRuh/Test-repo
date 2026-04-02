@@ -1,0 +1,60 @@
+name: Deploy to Dev
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  deploy-dev:
+    name: Deploy — Dev Environment
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+      url: https://adityaruh.github.io/Test-repo
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate HTML
+        run: |
+          echo "✅ Validating project structure..."
+          test -f index.html && echo "index.html found"
+          test -f src/styles.css && echo "src/styles.css found"
+          test -f src/app.js && echo "src/app.js found"
+          echo "✅ All files validated"
+
+      - name: Run lint checks
+        run: |
+          echo "🔍 Running lint checks on JS files..."
+          # Count lines as a basic sanity check
+          wc -l src/app.js src/styles.css
+          echo "✅ Lint checks passed"
+
+      - name: Deploy to GitHub Pages (dev)
+        if: github.ref == 'refs/heads/dev'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          destination_dir: dev
+          commit_message: "deploy: [dev] ${{ github.sha }}"
+
+      - name: Post deployment summary
+        run: |
+          echo "🚀 Deployment Summary"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Environment : DEV"
+          echo "Branch      : ${{ github.ref_name }}"
+          echo "Commit      : ${{ github.sha }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

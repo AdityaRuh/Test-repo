@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoVault — Car Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">AUTO<strong>VAULT</strong></span>
+      </div>
+      <div class="header-meta">
+        <span class="env-badge">DEV</span>
+        <span class="car-count" id="carCount">0 vehicles</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-grid-overlay"></div>
+    <div class="hero-inner">
+      <p class="hero-eyebrow">Fleet Management System</p>
+      <h1 class="hero-title">YOUR CARS,<br/>YOUR CONTROL</h1>
+      <p class="hero-sub">Track, manage and organise your entire vehicle inventory in one sleek dashboard.</p>
+      <button class="btn btn-primary" id="openAddModal">
+        <span class="btn-icon">+</span> Add Vehicle
+      </button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-card">
+        <span class="stat-num" id="statTotal">0</span>
+        <span class="stat-label">Total Vehicles</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" id="statAvailable">0</span>
+        <span class="stat-label">Available</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" id="statSold">0</span>
+        <span class="stat-label">Sold</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" id="statAvgPrice">—</span>
+        <span class="stat-label">Avg. Price</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Controls -->
+  <section class="controls">
+    <div class="controls-inner">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search by make, model or year..." />
+      </div>
+      <div class="filter-group">
+        <select id="filterStatus" class="filter-select">
+          <option value="">All Status</option>
+          <option value="available">Available</option>
+          <option value="sold">Sold</option>
+          <option value="reserved">Reserved</option>
+        </select>
+        <select id="filterSort" class="filter-select">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="price-asc">Price ↑</option>
+          <option value="price-desc">Price ↓</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- Car Grid -->
+  <main class="main">
+    <div class="cars-grid" id="carsGrid"></div>
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🚗</div>
+      <h3>No vehicles found</h3>
+      <p>Add your first vehicle or adjust your search filters.</p>
+      <button class="btn btn-primary" id="emptyAddBtn">Add Vehicle</button>
+    </div>
+  </main>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Add Vehicle</h2>
+        <button class="modal-close" id="closeModal">✕</button>
+      </div>
+      <form id="carForm" class="car-form">
+        <input type="hidden" id="carId" />
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Make <span class="req">*</span></label>
+            <input type="text" id="carMake" class="form-input" placeholder="e.g. Toyota" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Model <span class="req">*</span></label>
+            <input type="text" id="carModel" class="form-input" placeholder="e.g. Camry" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Year <span class="req">*</span></label>
+            <input type="number" id="carYear" class="form-input" placeholder="e.g. 2023" min="1900" max="2030" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Price (₹) <span class="req">*</span></label>
+            <input type="number" id="carPrice" class="form-input" placeholder="e.g. 1500000" min="0" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Fuel Type</label>
+            <select id="carFuel" class="form-input">
+              <option value="Petrol">Petrol</option>
+              <option value="Diesel">Diesel</option>
+              <option value="Electric">Electric</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="CNG">CNG</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Transmission</label>
+            <select id="carTransmission" class="form-input">
+              <option value="Automatic">Automatic</option>
+              <option value="Manual">Manual</option>
+              <option value="CVT">CVT</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Mileage (km)</label>
+            <input type="number" id="carMileage" class="form-input" placeholder="e.g. 45000" min="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Color</label>
+            <input type="text" id="carColor" class="form-input" placeholder="e.g. Midnight Black" />
+          </div>
+        </div>
+        <div class="form-group form-group-full">
+          <label class="form-label">Status</label>
+          <div class="status-toggle">
+            <label class="status-opt">
+              <input type="radio" name="carStatus" value="available" checked /> Available
+            </label>
+            <label class="status-opt">
+              <input type="radio" name="carStatus" value="reserved" /> Reserved
+            </label>
+            <label class="status-opt">
+              <input type="radio" name="carStatus" value="sold" /> Sold
+            </label>
+          </div>
+        </div>
+        <div class="form-group form-group-full">
+          <label class="form-label">Notes</label>
+          <textarea id="carNotes" class="form-input form-textarea" placeholder="Additional details about the vehicle..."></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="cancelModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveBtn">Save Vehicle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div class="modal-overlay" id="deleteOverlay">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title">Remove Vehicle?</h2>
+        <button class="modal-close" id="closeDeleteModal">✕</button>
+      </div>
+      <p class="delete-message">This will permanently remove the vehicle from your inventory. This action cannot be undone.</p>
+      <div class="form-actions">
+        <button class="btn btn-ghost" id="cancelDelete">Cancel</button>
+        <button class="btn btn-danger" id="confirmDelete">Remove Vehicle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="src/app.js"></script>
+</body>
+</html>
